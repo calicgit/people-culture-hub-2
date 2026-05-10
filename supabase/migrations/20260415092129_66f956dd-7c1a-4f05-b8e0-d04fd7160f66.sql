@@ -1,0 +1,3 @@
+UPDATE team_members SET photo_url = 'https://yudqexukaajoieoqewdr.supabase.co/storage/v1/object/public/team-photos/maja-darija-skrljak.jpg' WHERE full_name = 'Maja Darija Škrljak' AND council = 'savjetodavno_vijece';
+
+UPDATE team_members SET photo_url = 'https://yudqexukaajoieoqewdr.supabase.co/storage/v1/object/public/team-photos/romina-ivancic.png' WHERE full_name = 'Romina Ivančić Maćešić' AND council = 'savjetodavno_vijece';

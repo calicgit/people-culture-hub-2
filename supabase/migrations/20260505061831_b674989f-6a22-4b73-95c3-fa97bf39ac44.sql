@@ -1,0 +1,1 @@
+UPDATE public.team_members SET title = 'Članica Savjetodavnog vijeća', title_en = 'Advisory Board Member' WHERE id = '9a8ee726-fd4c-4b8b-bcbb-365f914c0b2d';
