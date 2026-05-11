@@ -151,34 +151,34 @@ const MembershipSection = () => {
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-            <a
-              href="https://www.otpbanka.hr/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="OTP banka"
-              className="inline-flex items-center justify-center border border-border transition-opacity hover:opacity-80"
-            >
-              <img
-                src="/members/otp-banka.png"
-                alt="OTP banka"
-                className="h-12 md:h-16 w-auto object-contain"
-                loading="lazy"
-              />
-            </a>
-            <a
-              href="https://deepproject.hr/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="DeeP Project"
-              className="inline-flex items-center justify-center border border-border transition-opacity hover:opacity-80"
-            >
-              <img
-                src="/members/deep-project.png"
-                alt="DeeP Project"
-                className="h-12 md:h-16 w-auto object-contain"
-                loading="lazy"
-              />
-            </a>
+          <a
+            href="https://deepproject.hr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="DeeP Project"
+            className="inline-flex items-center justify-center border border-border transition-opacity hover:opacity-80"
+          >
+            <img
+              src="/members/deep-project.png"
+              alt="DeeP Project"
+              className="h-12 md:h-16 w-auto object-contain"
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://www.otpbanka.hr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="OTP banka"
+            className="inline-flex items-center justify-center border border-border transition-opacity hover:opacity-80"
+          >
+            <img
+              src="/members/otp-banka.png"
+              alt="OTP banka"
+              className="h-12 md:h-16 w-auto object-contain"
+              loading="lazy"
+            />
+          </a>
           </div>
         </motion.div>
       </div>
