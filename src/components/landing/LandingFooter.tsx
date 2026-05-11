@@ -79,7 +79,7 @@ const LandingFooter = () => {
           </p>
           <Link
             to="/politika-privatnosti"
-            className="text-primary-foreground/40 hover:text-primary transition-colors text-[10px] font-body md:absolute md:right-0"
+            className="block w-full text-center text-primary-foreground/40 hover:text-primary transition-colors text-[10px] font-body md:absolute md:right-0 md:w-auto md:inline"
           >
             {t("Politika privatnosti", "Privacy Policy")}
           </Link>
