@@ -1,10 +1,53 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
+async function getAccessToken(): Promise<string> {
+  const now = Date.now();
+  if (cachedToken && cachedToken.expiresAt > now + 60_000) {
+    return cachedToken.token;
+  }
+
+  const tenantId = Deno.env.get("MS_TENANT_ID");
+  const clientId = Deno.env.get("MS_CLIENT_ID");
+  const clientSecret = Deno.env.get("MS_CLIENT_SECRET");
+
+  if (!tenantId || !clientId || !clientSecret) {
+    throw new Error("Missing MS_TENANT_ID, MS_CLIENT_ID, or MS_CLIENT_SECRET");
+  }
+
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const params = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: "https://graph.microsoft.com/.default",
+    grant_type: "client_credentials",
+  });
+
+  const res = await fetch(tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`Token request failed [${res.status}]: ${JSON.stringify(data)}`);
+  }
+
+  cachedToken = {
+    token: data.access_token,
+    expiresAt: now + (data.expires_in ?? 3600) * 1000,
+  };
+
+  return cachedToken.token;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,12 +64,6 @@ serve(async (req) => {
       advanced: "Advanced (170€/god)",
     };
 
-    const SMTP_HOST = Deno.env.get("SMTP_HOST");
-    const SMTP_PORT = parseInt(Deno.env.get("SMTP_PORT") || "587");
-    const SMTP_USER = Deno.env.get("SMTP_USER");
-    const SMTP_PASS = Deno.env.get("SMTP_PASS");
-    const SMTP_FROM = Deno.env.get("SMTP_FROM_EMAIL");
-
     const htmlBody = `
       <h2>Nova prijava za članstvo - People & Culture HUB</h2>
       <table style="border-collapse:collapse;width:100%;">
@@ -41,35 +78,42 @@ serve(async (req) => {
       </table>
     `;
 
-    console.log("SMTP config:", { SMTP_HOST, SMTP_PORT, SMTP_USER: SMTP_USER ? "set" : "missing", SMTP_FROM });
+    const sender = Deno.env.get("MS_SENDER");
+    if (!sender) {
+      throw new Error("MS_SENDER is not configured");
+    }
 
-    if (SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_FROM) {
-      // Ensure from is a clean email address
-      const cleanFrom = SMTP_FROM.trim();
-      const client = new SMTPClient({
-        connection: {
-          hostname: SMTP_HOST,
-          port: SMTP_PORT,
-          tls: SMTP_PORT === 465,
-          auth: {
-            username: SMTP_USER,
-            password: SMTP_PASS,
-          },
+    const token = await getAccessToken();
+    const graphUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`;
+    const response = await fetch(graphUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: {
+          subject: `Nova prijava za članstvo: ${firstName} ${lastName}`,
+          body: { contentType: "HTML", content: htmlBody },
+          toRecipients: [{ emailAddress: { address: "hub@peopleandculture.hr" } }],
+          replyTo: [{ emailAddress: { address: email } }],
         },
-      });
+        saveToSentItems: true,
+      }),
+    });
 
-      await client.send({
-        from: cleanFrom,
-        to: "hub@peopleandculture.hr",
-        subject: `Nova prijava za članstvo: ${firstName} ${lastName}`,
-        content: "Nova prijava za članstvo",
-        html: htmlBody,
+    if (!response.ok) {
+      let details: unknown;
+      try {
+        details = await response.json();
+      } catch {
+        details = await response.text();
+      }
+      console.error("Graph API error:", response.status, details);
+      return new Response(JSON.stringify({ error: "Graph API error", details }), {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-
-      await client.close();
-      console.log("Email sent via SMTP successfully");
-    } else {
-      console.log("SMTP not configured. Missing env vars.");
     }
 
     return new Response(JSON.stringify({ success: true }), {
